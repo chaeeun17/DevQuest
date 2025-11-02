@@ -19,7 +19,9 @@ public class MoveControl : MonoBehaviour
     {
         None,
         Idle,
-        Jump
+        Run,
+        Jump,
+        DoubleJump
     }
     
     [Header("Debug")]
@@ -49,6 +51,7 @@ public class MoveControl : MonoBehaviour
         stateTime += Time.deltaTime;
         CheckLanded();
         //insert code here...
+        CheckMoving();
 
         //1. 스테이트 전환 상황 판단
         if (nextState == State.None) 
@@ -62,15 +65,39 @@ public class MoveControl : MonoBehaviour
                         {
                             nextState = State.Jump;
                         }
+                        else if(moving&& Input.GetKey(KeyCode.LeftShift)) 
+                        {
+                            nextState = State.Run;
+                        }
                     }
                     break;
                 case State.Jump:
+                    if (!landed &&Input.GetKeyDown(KeyCode.Space)) 
+                    {
+                        nextState = State.DoubleJump;
+                    }
+                    else if (landed) 
+                    {
+                        nextState = State.Idle;
+                    }
+                    break;
+                case State.DoubleJump:
                     if (landed) 
                     {
                         nextState = State.Idle;
                     }
                     break;
+
                 //insert code here...
+                case State.Run:
+                    if (landed) 
+                    {
+                        if(!moving || !Input.GetKey(KeyCode.LeftShift)) 
+                        {
+                            nextState = State.Idle;
+                        }
+                    }
+                    break;
             }
         }
         
@@ -87,6 +114,18 @@ public class MoveControl : MonoBehaviour
                     rigid.linearVelocity = vel;
                     break;
                 //insert code here...
+                case State.DoubleJump:
+                    var vel2 = rigid.linearVelocity;
+                    vel2.y = jumpAmount;
+                    rigid.linearVelocity = vel2;
+                    break;
+                case State.Run:
+                    moveSpeed = 10f;
+                    break;
+                case State.Idle:
+                    moveSpeed = 5f;
+                    break;
+               
             }
             stateTime = 0f;
         }
@@ -98,6 +137,7 @@ public class MoveControl : MonoBehaviour
     private void FixedUpdate()
     {
         UpdateInput();
+        Debug.Log("Current State: " + state);
     }
 
     private void CheckLanded() {
@@ -106,6 +146,11 @@ public class MoveControl : MonoBehaviour
         var center = col.bounds.center;
         var origin = new Vector3(center.x, center.y - ((col.height - 1f) / 2 + 0.15f), center.z);
         landed = Physics.CheckSphere(origin, 0.45f, 1 << 3, QueryTriggerInteraction.Ignore);
+    }
+
+    private void CheckMoving()
+    {
+        moving = Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.D);
     }
     
     private void UpdateInput()

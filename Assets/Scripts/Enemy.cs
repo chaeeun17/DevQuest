@@ -13,7 +13,12 @@ public class Enemy : MonoBehaviour
     
     [Header("Settings")]
     [SerializeField] private float attackRange;
-    
+
+    [Header("playerFollower")]
+    public Transform target;   
+    NavMeshAgent nmAgent;
+
+
     public enum State 
     {
         None,
@@ -31,10 +36,27 @@ public class Enemy : MonoBehaviour
     { 
         state = State.None;
         nextState = State.Idle;
+
+        nmAgent = GetComponent<NavMeshAgent>();
     }
 
     private void Update()
     {
+        Vector3 direction = target.position - transform.position;
+        float angle = Vector3.Angle(transform.forward, direction);
+
+        if (target != null)
+        {
+            if (angle < 90f)
+            {
+                nmAgent.SetDestination(target.position);
+            }
+            else
+            {
+                nmAgent.SetDestination(transform.position);
+            }
+        }
+
         //1. 스테이트 전환 상황 판단
         if (nextState == State.None) 
         {
