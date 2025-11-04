@@ -14,9 +14,10 @@ public class Enemy : MonoBehaviour
     [Header("Settings")]
     [SerializeField] private float attackRange;
 
-    [Header("playerFollower")]
+    [Header("Navigation")]
     public Transform target;   
-    NavMeshAgent nmAgent;
+    private NavMeshAgent nmAgent;
+    private Vector3 randomPosition;
 
 
     public enum State 
@@ -42,18 +43,25 @@ public class Enemy : MonoBehaviour
 
     private void Update()
     {
-        Vector3 direction = target.position - transform.position;
-        float angle = Vector3.Angle(transform.forward, direction);
-
         if (target != null)
         {
-            if (angle < 90f)
+            Vector3 direction = target.position - transform.position;
+            float angle = Vector3.Angle(transform.forward, direction);
+            float distance = Vector3.Distance(transform.position, target.position);
+
+            // 가까운 정면 방향으로 플레이어 보이면 추적
+            if (angle < 90f && distance < 10f)
             {
                 nmAgent.SetDestination(target.position);
             }
             else
             {
-                nmAgent.SetDestination(transform.position);
+                // 아니면 랜덤 위치로 이동
+                if((nmAgent.remainingDistance <= nmAgent.stoppingDistance) || !nmAgent.hasPath)
+                {
+                    randomPosition = GetRandomPositionOnNavMesh();
+                    nmAgent.SetDestination(randomPosition);
+                }
             }
         }
 
@@ -98,6 +106,18 @@ public class Enemy : MonoBehaviour
         
         //3. 글로벌 & 스테이트 업데이트
         //insert code here...
+    }
+
+    Vector3 GetRandomPositionOnNavMesh()
+    {
+        // 랜덤한 방향 벡터 생성
+        Vector3 randomDirection = UnityEngine.Random.insideUnitSphere * 10f;
+        randomDirection += transform.position;  // 현재 위치에 더하기
+
+        NavMeshHit navHit;
+        // randomDirection에서 가장 가까운 navMesh 위치 찾기
+        NavMesh.SamplePosition(randomDirection, out navHit, 10f, -1);
+        return navHit.position;
     }
     
     private void Attack() //현재 공격은 애니메이션만 작동합니다.

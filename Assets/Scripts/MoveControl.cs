@@ -50,8 +50,7 @@ public class MoveControl : MonoBehaviour
         //0. 글로벌 상황 판단
         stateTime += Time.deltaTime;
         CheckLanded();
-        //insert code here...
-        CheckMoving();
+        CheckMoving();  // 이동 중인지 감지
 
         //1. 스테이트 전환 상황 판단
         if (nextState == State.None) 
@@ -61,18 +60,25 @@ public class MoveControl : MonoBehaviour
                 case State.Idle:
                     if (landed) 
                     {
-                        if (Input.GetKey(KeyCode.Space)) 
+                        if (Input.GetKeyDown(KeyCode.Space)) 
                         {
                             nextState = State.Jump;
                         }
+                        // 이동 중이고 shift키 클릭 시 달리기
                         else if(moving&& Input.GetKey(KeyCode.LeftShift)) 
                         {
                             nextState = State.Run;
                         }
                     }
                     break;
+                case State.Run:
+                    if(!moving || !Input.GetKey(KeyCode.LeftShift)) 
+                    {
+                        nextState = State.Idle;
+                    }
+                    break;
                 case State.Jump:
-                    if (!landed &&Input.GetKeyDown(KeyCode.Space)) 
+                    if (!landed && Input.GetKeyDown(KeyCode.Space)) 
                     {
                         nextState = State.DoubleJump;
                     }
@@ -85,17 +91,6 @@ public class MoveControl : MonoBehaviour
                     if (landed) 
                     {
                         nextState = State.Idle;
-                    }
-                    break;
-
-                //insert code here...
-                case State.Run:
-                    if (landed) 
-                    {
-                        if(!moving || !Input.GetKey(KeyCode.LeftShift)) 
-                        {
-                            nextState = State.Idle;
-                        }
                     }
                     break;
             }
@@ -113,12 +108,13 @@ public class MoveControl : MonoBehaviour
                     vel.y = jumpAmount;
                     rigid.linearVelocity = vel;
                     break;
-                //insert code here...
+                
                 case State.DoubleJump:
                     var vel2 = rigid.linearVelocity;
                     vel2.y = jumpAmount;
                     rigid.linearVelocity = vel2;
                     break;
+                // 달리기
                 case State.Run:
                     moveSpeed = 10f;
                     break;
@@ -144,8 +140,8 @@ public class MoveControl : MonoBehaviour
         //발 위치에 작은 구를 하나 생성한 후, 그 구가 땅에 닿는지 검사한다.
         //1 << 3은 Ground의 레이어가 3이기 때문, << 는 비트 연산자
         var center = col.bounds.center;
-        var origin = new Vector3(center.x, center.y - ((col.height - 1f) / 2 + 0.15f), center.z);
-        landed = Physics.CheckSphere(origin, 0.45f, 1 << 3, QueryTriggerInteraction.Ignore);
+        var origin = new Vector3(center.x, center.y - ((col.height - 1f) / 2 + 0.12f), center.z);
+        landed = Physics.CheckSphere(origin, 0.40f, 1 << 3, QueryTriggerInteraction.Ignore);
     }
 
     private void CheckMoving()
