@@ -33,10 +33,13 @@ public class MoveControl : MonoBehaviour
     private float stateTime;
     private Vector3 forward, right;
 
+    private ObjectPooling objectPooling; // 오브젝트풀링
+
     private void Start()
     {
         rigid = GetComponent<Rigidbody>();
         col = GetComponent<CapsuleCollider>();
+        objectPooling = FindObjectOfType<ObjectPooling>();
         
         state = State.None;
         nextState = State.Idle;
@@ -128,12 +131,35 @@ public class MoveControl : MonoBehaviour
         
         //3. 글로벌 & 스테이트 업데이트
         //insert code here...
+
+
+        // 투사체 발사
+        if (Input.GetMouseButtonDown(0))
+        {
+            GameObject bullet = objectPooling.GetFromPool();
+            // 플레이어 앞쪽에 총알 위치
+            bullet.transform.position = transform.position + transform.TransformDirection(Vector3.forward) * 1.5f; 
+            
+            // 발사 방향 설정
+            Vector3 dir;
+            RaycastHit hit;
+            if(Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, 100f))
+            {
+                dir = (hit.point - bullet.transform.position).normalized;
+            }
+            else
+            {
+                dir = Camera.main.transform.forward;
+            }
+
+            bullet.GetComponent<Rigidbody>().AddForce(dir*50, ForceMode.Impulse);
+        }
     }
 
     private void FixedUpdate()
     {
         UpdateInput();
-        Debug.Log("Current State: " + state);
+        //Debug.Log("Current State: " + state);
     }
 
     private void CheckLanded() {

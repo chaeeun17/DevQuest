@@ -39,6 +39,12 @@ public class Enemy : MonoBehaviour
         nextState = State.Idle;
 
         nmAgent = GetComponent<NavMeshAgent>();
+        target = FindObjectOfType<MoveControl>().transform;
+    }
+
+    void FixedUpdate()
+    {
+        
     }
 
     private void Update()
@@ -116,8 +122,11 @@ public class Enemy : MonoBehaviour
 
         NavMeshHit navHit;
         // randomDirection에서 가장 가까운 navMesh 위치 찾기
-        NavMesh.SamplePosition(randomDirection, out navHit, 10f, -1);
-        return navHit.position;
+        if (NavMesh.SamplePosition(randomDirection, out navHit, 10f, -1))
+        {
+            return navHit.position;
+        }
+        return transform.position;
     }
     
     private void Attack() //현재 공격은 애니메이션만 작동합니다.
