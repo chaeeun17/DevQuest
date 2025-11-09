@@ -152,7 +152,10 @@ public class MoveControl : MonoBehaviour
                 dir = Camera.main.transform.forward;
             }
 
-            bullet.GetComponent<Rigidbody>().AddForce(dir*50, ForceMode.Impulse);
+            Rigidbody bulletRb = bullet.GetComponent<Rigidbody>();
+            bulletRb.linearVelocity = Vector3.zero;
+            bulletRb.angularVelocity = Vector3.zero;
+            bulletRb.AddForce(dir*50, ForceMode.Impulse);
         }
     }
 

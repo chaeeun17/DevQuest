@@ -19,12 +19,20 @@ public class Enemy : MonoBehaviour
     private NavMeshAgent nmAgent;
     private Vector3 randomPosition;
 
+    public float updateInterval = 3f;  // 목표 위치를 갱신할 시간 간격
+    private float timeSinceLastUpdate;   // 마지막으로 목표 위치 갱신한 시간
+
+    public bool isDie = false;
+
 
     public enum State 
     {
         None,
-        Idle,
-        Attack
+        Idle,    // 대기
+        Wander,  // 떠돌기
+        Chase,   // 플레이어 쫓기
+        Attack,   // 공격
+        Die       // 죽음
     }
     
     [Header("Debug")]
@@ -32,6 +40,7 @@ public class Enemy : MonoBehaviour
     public State nextState = State.None;
 
     private bool attackDone;
+    private bool dieDone;
 
     private void Start()
     { 
@@ -40,36 +49,19 @@ public class Enemy : MonoBehaviour
 
         nmAgent = GetComponent<NavMeshAgent>();
         target = FindObjectOfType<MoveControl>().transform;
+
+        timeSinceLastUpdate=updateInterval;
     }
 
-    void FixedUpdate()
-    {
-        
-    }
 
     private void Update()
     {
-        if (target != null)
-        {
-            Vector3 direction = target.position - transform.position;
-            float angle = Vector3.Angle(transform.forward, direction);
-            float distance = Vector3.Distance(transform.position, target.position);
+        if (target == null)
+            return;
 
-            // 가까운 정면 방향으로 플레이어 보이면 추적
-            if (angle < 90f && distance < 10f)
-            {
-                nmAgent.SetDestination(target.position);
-            }
-            else
-            {
-                // 아니면 랜덤 위치로 이동
-                if((nmAgent.remainingDistance <= nmAgent.stoppingDistance) || !nmAgent.hasPath)
-                {
-                    randomPosition = GetRandomPositionOnNavMesh();
-                    nmAgent.SetDestination(randomPosition);
-                }
-            }
-        }
+        Vector3 direction = target.position - transform.position;
+        float angle = Vector3.Angle(transform.forward, direction);
+        float distance = Vector3.Distance(transform.position, target.position);
 
         //1. 스테이트 전환 상황 판단
         if (nextState == State.None) 
@@ -82,6 +74,14 @@ public class Enemy : MonoBehaviour
                     {
                         nextState = State.Attack;
                     }
+                    else if(angle < 90f && distance < 20f)
+                    {
+                        nextState = State.Chase;
+                    }
+                    else
+                    {
+                        nextState = State.Wander;
+                    }
                     break;
                 case State.Attack:
                     if (attackDone)
@@ -90,7 +90,29 @@ public class Enemy : MonoBehaviour
                         attackDone = false;
                     }
                     break;
-                //insert code here...
+                case State.Wander:
+                    if (angle < 90f && distance < 20f)
+                    {
+                        nextState = State.Chase;
+                    }else if(isDie)
+                    {
+                        nextState = State.Die;
+                    }
+                    break;
+                case State.Chase:
+                    if (distance <= attackRange)
+                    {
+                        nextState = State.Attack;
+                    }
+                    else if (angle >= 90f || distance >= 20f)
+                    {
+                        nextState = State.Wander;
+                    }
+                    else if(isDie)
+                    {
+                        nextState = State.Die;
+                    }
+                    break;
             }
         }
         
@@ -106,12 +128,35 @@ public class Enemy : MonoBehaviour
                 case State.Attack:
                     Attack();
                     break;
-                //insert code here...
+                case State.Wander:
+                    Wander();
+                    break;
+                case State.Chase:
+                    Chase();
+                    break;
+                case State.Die:
+                    Die();
+                    break;
             }
         }
         
         //3. 글로벌 & 스테이트 업데이트
-        //insert code here...
+        switch(state)
+        {
+            case State.Wander:
+                Wander();
+                break;
+            case State.Chase:
+                Chase();
+                break;
+            case State.Die:
+                if(dieDone){
+                    Destroy(this.gameObject);
+                }
+                break;
+        }
+
+        //Debug.Log("Current State: " + state.ToString());
     }
 
     Vector3 GetRandomPositionOnNavMesh()
@@ -122,7 +167,7 @@ public class Enemy : MonoBehaviour
 
         NavMeshHit navHit;
         // randomDirection에서 가장 가까운 navMesh 위치 찾기
-        if (NavMesh.SamplePosition(randomDirection, out navHit, 10f, -1))
+        if (NavMesh.SamplePosition(randomDirection, out navHit, 20f, NavMesh.AllAreas))
         {
             return navHit.position;
         }
@@ -132,6 +177,39 @@ public class Enemy : MonoBehaviour
     private void Attack() //현재 공격은 애니메이션만 작동합니다.
     {
         animator.SetTrigger("attack");
+    }
+
+
+    private void Wander()
+    {
+        animator.SetTrigger("walk");
+
+        timeSinceLastUpdate += Time.deltaTime;
+        
+        // 랜덤 위치로 이동
+        if(timeSinceLastUpdate >= updateInterval || (nmAgent.remainingDistance <= nmAgent.stoppingDistance) || !nmAgent.hasPath)
+        {
+            randomPosition = GetRandomPositionOnNavMesh();
+            // 위치 표시
+            Debug.DrawLine(transform.position, randomPosition, Color.red, 2f);
+            nmAgent.SetDestination(randomPosition);
+
+            timeSinceLastUpdate = 0f;
+        }
+    }
+
+
+    private void Chase()
+    {
+        // 플레이어 위치로 이동
+        animator.SetTrigger("walk");
+        nmAgent.SetDestination(target.position);
+    }
+
+    private void Die()
+    {
+        animator.SetTrigger("die");
+        //nmAgent.isStopped = true;
     }
 
     public void InstantiateFx() //Unity Animation Event 에서 실행됩니다.
@@ -144,6 +222,10 @@ public class Enemy : MonoBehaviour
         attackDone = true;
     }
 
+    public void WhenDieAnimationDone()  //Unity Animation Event 에서 실행됩니다.
+    {
+        dieDone = true;
+    }
 
     private void OnDrawGizmosSelected()
     {

@@ -226,6 +226,7 @@ GameObject:
   - component: {fileID: 3118177360468610765}
   - component: {fileID: 2367414038726500627}
   - component: {fileID: 6002782940906125219}
+  - component: {fileID: 4318437147532515341}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Enemy
@@ -268,6 +269,8 @@ MonoBehaviour:
   splashFx: {fileID: 100002, guid: e9391f622091e1449bdef4ef15af4948, type: 3}
   attackRange: 4.1
   target: {fileID: 0}
+  updateInterval: 3
+  isDie: 0
   state: 0
   nextState: 0
 --- !u!95 &976746269424408529
@@ -364,6 +367,21 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &4318437147532515341
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1463844559080588615}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05cabc5c5e913dd4fb630d87975f73b5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hp_Subject: {fileID: 0}
+  myHp_Observer: {fileID: 0}
+  gameOver_Observer: {fileID: 0}
 --- !u!1 &1573040912515231679
 GameObject:
   m_ObjectHideFlags: 0
